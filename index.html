@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Indicador de Sentimiento de Mercado</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #0f0f1a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 60px;
+  }
+  h1 { font-size: 24px; margin-bottom: 5px; }
+  p.subtitulo { color: #999; margin-top: 0; }
+  .tarjeta {
+    background: #1c1c2e;
+    border-radius: 16px;
+    padding: 40px;
+    margin-top: 30px;
+    text-align: center;
+    width: 320px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+  }
+  .nivel {
+    font-size: 32px;
+    font-weight: bold;
+    padding: 12px 24px;
+    border-radius: 12px;
+    display: inline-block;
+    margin: 15px 0;
+  }
+  .valor { font-size: 48px; font-weight: bold; margin: 10px 0; }
+  .detalle { color: #aaa; font-size: 14px; margin-top: 15px; }
+  .Calma { background: #1e5631; color: #7CFC9A; }
+  .Normal { background: #1e4a56; color: #7CE1FC; }
+  .Nervioso { background: #665019; color: #FFD466; }
+  .Pánico { background: #5c1e1e; color: #FF7C7C; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h1>📊 Indicador de Sentimiento de Mercado</h1>
+<p class="subtitulo">Basado en el VIX (índice de volatilidad del S&P 500)</p>
+
+<div class="tarjeta">
+  <div class="valor" id="valor">--</div>
+  <div class="nivel" id="nivel">Cargando...</div>
+  <div class="detalle" id="media"></div>
+  <div class="detalle" id="fecha"></div>
+  <canvas id="grafico" style="margin-top: 25px;"></canvas>
+</div>
+
+<script>
+async function cargarDatos() {
+  try {
+    const respuesta = await fetch("http://127.0.0.1:8000/api/sentimiento");
+    const datos = await respuesta.json();
+
+    document.getElementById("valor").textContent = datos.valor_actual;
+    document.getElementById("media").textContent = "Media móvil 20d: " + datos.media_movil_20d;
+    document.getElementById("fecha").textContent = "Último dato: " + datos.fecha_ultimo_dato;
+
+    const nivelEl = document.getElementById("nivel");
+    nivelEl.textContent = datos.nivel_sentimiento;
+    nivelEl.className = "nivel " + datos.nivel_sentimiento;
+  } catch (error) {
+    document.getElementById("nivel").textContent = "Error al cargar datos";
+  }
+}
+
+cargarDatos();
+
+let miGrafico = null;
+async function cargarGrafico() {
+  try {
+    const respuesta = await fetch("http://127.0.0.1:8000/api/historico");
+    const datos = await respuesta.json();
+
+    const ctx = document.getElementById("grafico").getContext("2d");
+
+if (miGrafico !== null) {
+  miGrafico.destroy();
+}
+
+miGrafico = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: datos.fechas,
+        datasets: [{
+          label: "VIX",
+          data: datos.valores,
+          borderColor: "#7CE1FC",
+          backgroundColor: "rgba(124, 225, 252, 0.1)",
+          fill: true,
+          tension: 0.2,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: true, ticks: { color: "#aaa", maxTicksLimit: 6 } },
+          y: { ticks: { color: "#aaa" } }
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error cargando gráfico:", error);
+  }
+}
+
+cargarGrafico();
+
+// Actualiza los datos automáticamente cada 60 segundos
+setInterval(() => {
+  cargarDatos();
+  cargarGrafico();
+}, 300000);
+</script>
+
+</body>
+</html>

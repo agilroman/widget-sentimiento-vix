@@ -55,9 +55,10 @@
 </div>
 
 <script>
-async function cargarDatos() {
+async function cargarDatos(intento = 1) {
   try {
-    const respuesta = await fetch("https://widget-sentimiento-vix.onrender.com");
+    const respuesta = await fetch("https://widget-sentimiento-vix.onrender.com/api/sentimiento");
+    if (!respuesta.ok) throw new Error("Respuesta no OK");
     const datos = await respuesta.json();
 
     document.getElementById("valor").textContent = datos.valor_actual;
@@ -68,25 +69,31 @@ async function cargarDatos() {
     nivelEl.textContent = datos.nivel_sentimiento;
     nivelEl.className = "nivel " + datos.nivel_sentimiento;
   } catch (error) {
-    document.getElementById("nivel").textContent = "Error al cargar datos";
+    if (intento <= 3) {
+      document.getElementById("nivel").textContent = "Conectando... (" + intento + "/3)";
+      setTimeout(() => cargarDatos(intento + 1), 8000);
+    } else {
+      document.getElementById("nivel").textContent = "Error al cargar datos";
+    }
   }
 }
 
 cargarDatos();
 
 let miGrafico = null;
-async function cargarGrafico() {
+async function cargarGrafico(intento = 1) {
   try {
-    const respuesta = await fetch("https://widget-sentimiento-vix.onrender.com");
+    const respuesta = await fetch("https://widget-sentimiento-vix.onrender.com/api/historico");
+    if (!respuesta.ok) throw new Error("Respuesta no OK");
     const datos = await respuesta.json();
 
     const ctx = document.getElementById("grafico").getContext("2d");
 
-if (miGrafico !== null) {
-  miGrafico.destroy();
-}
+    if (miGrafico !== null) {
+      miGrafico.destroy();
+    }
 
-miGrafico = new Chart(ctx, {
+    miGrafico = new Chart(ctx, {
       type: "line",
       data: {
         labels: datos.fechas,
@@ -104,13 +111,17 @@ miGrafico = new Chart(ctx, {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-          x: { display: true, ticks: { color: "#aaa", maxTicksLimit: 6 } },
+          x: { display: false },
           y: { ticks: { color: "#aaa" } }
         }
       }
     });
   } catch (error) {
-    console.error("Error cargando gráfico:", error);
+    if (intento <= 3) {
+      setTimeout(() => cargarGrafico(intento + 1), 8000);
+    } else {
+      console.error("Error cargando gráfico tras varios intentos:", error);
+    }
   }
 }
 

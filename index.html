@@ -111,7 +111,7 @@ async function cargarGrafico(intento = 1) {
         responsive: true,
         plugins: { legend: { display: false } },
         scales: {
-          x: { display: false },
+          x: { display: true, ticks: { color: "#aaa", maxTicksLimit: 6 } },
           y: { ticks: { color: "#aaa" } }
         }
       }
@@ -131,7 +131,7 @@ cargarGrafico();
 setInterval(() => {
   cargarDatos();
   cargarGrafico();
-}, 300000);
+}, 15000);
 </script>
 
 </body>

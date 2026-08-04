@@ -2,16 +2,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import yfinance as yf
+import time
 
 app = FastAPI(title="API Indicador de Sentimiento VIX")
 
-# Permitimos que cualquier página web (nuestro HTML) pueda consultar esta API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Caché en memoria: guardamos los datos y cuándo se pidieron por última vez
+cache = {
+    "datos": None,
+    "ultima_actualizacion": 0
+}
+DURACION_CACHE = 300  # 5 minutos, en segundos
 
 def clasificar_sentimiento(vix):
     if vix < 15:
@@ -23,11 +30,19 @@ def clasificar_sentimiento(vix):
     else:
         return "Pánico"
 
+def obtener_datos_vix():
+    """Descarga datos de Yahoo Finance solo si el caché ha caducado."""
+    ahora = time.time()
+    if cache["datos"] is None or (ahora - cache["ultima_actualizacion"]) > DURACION_CACHE:
+        vix = yf.Ticker("^VIX")
+        datos = vix.history(period="6mo")
+        cache["datos"] = datos
+        cache["ultima_actualizacion"] = ahora
+    return cache["datos"]
+
 @app.get("/api/sentimiento")
 def obtener_sentimiento():
-    # Descargamos datos frescos del VIX cada vez que se llama a la API
-    vix = yf.Ticker("^VIX")
-    datos = vix.history(period="6mo")
+    datos = obtener_datos_vix()
 
     valor_actual = float(datos["Close"].iloc[-1])
     media_movil_20 = float(datos["Close"].rolling(window=20).mean().iloc[-1])
@@ -42,8 +57,7 @@ def obtener_sentimiento():
 
 @app.get("/api/historico")
 def obtener_historico():
-    vix = yf.Ticker("^VIX")
-    datos = vix.history(period="6mo")
+    datos = obtener_datos_vix()
 
     fechas = [str(fecha.date()) for fecha in datos.index]
     valores = [round(float(v), 2) for v in datos["Close"]]

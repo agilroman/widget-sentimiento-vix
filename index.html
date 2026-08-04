@@ -132,6 +132,13 @@ setInterval(() => {
   cargarDatos();
   cargarGrafico();
 }, 120000);
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    cargarDatos();
+    cargarGrafico();
+  }
+});
 </script>
 
 </body>

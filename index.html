@@ -57,7 +57,7 @@
 <script>
 async function cargarDatos() {
   try {
-    const respuesta = await fetch("http://127.0.0.1:8000/api/sentimiento");
+    const respuesta = await fetch("https://widget-sentimiento-vix.onrender.com");
     const datos = await respuesta.json();
 
     document.getElementById("valor").textContent = datos.valor_actual;
@@ -77,7 +77,7 @@ cargarDatos();
 let miGrafico = null;
 async function cargarGrafico() {
   try {
-    const respuesta = await fetch("http://127.0.0.1:8000/api/historico");
+    const respuesta = await fetch("https://widget-sentimiento-vix.onrender.com");
     const datos = await respuesta.json();
 
     const ctx = document.getElementById("grafico").getContext("2d");
